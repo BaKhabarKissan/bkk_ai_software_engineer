@@ -15,29 +15,38 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
 ### Workflow
 
 ```
-1. Jira ticket created → assigned or labeled
-2. Jira webhook triggers this backend
+1. Jira ticket created → assigned or labeled with "AI-SE"
+2. Jira webhook triggers POST /api/jira/webhook
 3. Backend processes the trigger:
-   - Fetches repository details
-   - Creates branch with naming template
-   - Claude Code implements the task
-   - Creates PR for the branch
+   - Validates webhook payload
+   - Extracts issue data (key, summary, description, labels)
+   - TODO: Fetches repository details
+   - TODO: Creates branch with naming template
+   - TODO: Claude Code implements the task
+   - TODO: Creates PR for the branch
 ```
+
+### Current Integrations
+
+- **Jira Webhook** - ✅ Implemented (`/api/jira/webhook`)
+  - Handles `jira:issue_created` and `jira:issue_updated` events
+  - Filters by assignee and labels
+  - Detects changes to assignee, labels, status
 
 ### Planned Integrations
 
-- **Jira** - Webhook receiver, ticket details
 - **GitHub/Git** - Clone repo, create branch, push, create PR
 - **Claude Code** - AI agent to implement the task
 
 ## Commands
 
 ```bash
-npm install       # Install dependencies
-npm run dev       # Start with nodemon (auto-reload)
-npm start         # Start production server
-npm run lint      # Check for linting errors
-npm run lint:fix  # Auto-fix linting errors
+npm install        # Install dependencies
+npm run start:local # Start with local env (nodemon)
+npm run dev        # Start with nodemon (auto-reload)
+npm start          # Start production server
+npm run lint       # Check for linting errors
+npm run lint:fix   # Auto-fix linting errors
 ```
 
 No tests configured yet.
@@ -49,6 +58,7 @@ ESLint enforced rules:
 - Double quotes
 - Semicolons required
 - Trailing newline required
+- **camelCase** for folder and file names in routes
 
 Run `npm run lint:fix` before committing.
 
@@ -64,28 +74,38 @@ src/
     requestLogger.middleware.js  # Request logging
     errorHandler.middleware.js   # Global error handler
   services/                # Shared services
-    log.service.js         # Logger service
+    log.service.js         # Logger service (exports native Pino logger)
     response.service.js    # Response utility (success/failure)
     validation.service.js  # Joi validation middleware
   utils/
-    logger.js              # Pino logger with txnId support
-  routes/<feature>/        # Feature-based route modules
+    logger.utils.js        # Pino logger configuration
+  routes/<featureName>/    # Feature-based route modules (camelCase)
     index.js               # Router definition with validation middleware
-    <feature>.controller.js
-    <feature>.service.js
-    <feature>.validation.js  # Joi schemas only
+    <featureName>.controller.js
+    <featureName>.service.js
+    <featureName>.validation.js  # Joi schemas only
   envs/
     .env.local             # Local environment variables
 ```
 
+### Naming Conventions
+
+| Type | Convention | Example |
+|------|------------|---------|
+| Route folders | camelCase | `jiraWebhook/` |
+| Route files | camelCase.type.js | `jiraWebhook.controller.js` |
+| Utils files | name.utils.js | `logger.utils.js` |
+| Middleware files | name.middleware.js | `txnId.middleware.js` |
+| Service files | name.service.js | `log.service.js` |
+
 ## Feature Module Pattern
 
-### routes/index.js
+### routes/featureName/index.js
 ```javascript
 const express = require("express");
 const { validateRequest } = require("../../services/validation.service");
-const controller = require("./feature.controller");
-const { schema } = require("./feature.validation");
+const controller = require("./featureName.controller");
+const { schema } = require("./featureName.validation");
 
 const router = express.Router();
 
@@ -95,7 +115,7 @@ router.post("/", validateRequest(schema), controller.create);
 module.exports = router;
 ```
 
-### validation.js (Joi schemas only)
+### featureName.validation.js (Joi schemas only)
 ```javascript
 const Joi = require("joi");
 
@@ -106,24 +126,22 @@ const createSchema = Joi.object({
 module.exports = { createSchema };
 ```
 
-### controller.js
+### featureName.controller.js
 ```javascript
-const { getLogger } = require("../../services/log.service");
+const { logger } = require("../../services/log.service");
 const response = require("../../services/response.service");
-const service = require("./feature.service");
-
-const log = getLogger(__filename);
+const service = require("./featureName.service");
 
 async function create(req, res, next) {
     const { txnId } = req;
-    log.info("create", "Handling request", { txnId });
+    logger.info(`[${txnId}] featureName.controller.js [create] Handling request`);
 
     try {
         const result = await service.create(req.body, txnId);
-        log.info("create", "Success", { txnId });
+        logger.info(`[${txnId}] featureName.controller.js [create] Success`);
         return response.success(res, "Created successfully", result, 201);
     } catch (error) {
-        log.error("create", "Failed", { txnId, error: error.message });
+        logger.error(`[${txnId}] featureName.controller.js [create] Failed: ${error.message}`);
         next(error);
     }
 }
@@ -131,14 +149,12 @@ async function create(req, res, next) {
 module.exports = { create };
 ```
 
-### service.js
+### featureName.service.js
 ```javascript
-const { getLogger } = require("../../services/log.service");
-
-const log = getLogger(__filename);
+const { logger } = require("../../services/log.service");
 
 async function create(data, txnId) {
-    log.info("create", "Processing", { txnId });
+    logger.info(`[${txnId}] featureName.service.js [create] Processing`);
     // Business logic here
     return result;
 }
@@ -191,17 +207,25 @@ router.get("/:id", validateRequest(paramsSchema, "params"), controller.get);
 
 ## Logging
 
-Log format: `[txnId] [file] [function] message`
+**Native Pino syntax** with Unix-style output (single line).
 
 ```javascript
-const { getLogger } = require("../../services/log.service");
-const log = getLogger(__filename);
+const { logger } = require("../../services/log.service");
 
-log.info("functionName", "message", { txnId });
-log.error("functionName", "error", { txnId, error: err.message });
-log.warn("functionName", "warning", { txnId });
-log.debug("functionName", "debug info", { txnId });
+// Simple message
+logger.info("file.js [functionName] Message here");
+
+// With txnId (in request context)
+logger.info(`[${txnId}] file.js [functionName] Message here`);
+
+// With data object (data first, message second)
+logger.debug(dataObject, `[${txnId}] file.js [functionName] Debug info`);
+
+// Error logging
+logger.error(`[${txnId}] file.js [functionName] Error: ${error.message}`);
 ```
+
+**Log levels:** trace, debug, info, warn, error, fatal
 
 ## Environment Variables
 
@@ -231,3 +255,28 @@ GITHUB_ACCESS_TOKEN                                 ="ghp_xxx..."
 ```
 
 Files: `src/envs/.env.local`, `src/envs/.env.stg`, `src/envs/.env.prod`
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | /health | Health check |
+| POST | /api/jira/webhook | Jira webhook receiver |
+| GET | /api/chat | Get messages |
+| POST | /api/chat | Send message |
+
+## Jira Webhook
+
+**Trigger label:** `AI-SE`
+
+**Supported events:**
+- `jira:issue_created` - New issue with assignee or labels
+- `jira:issue_updated` - Changes to assignee, labels, or status
+
+**Webhook URL:** `https://<your-domain>/api/jira/webhook`
+
+For local testing with ngrok:
+```bash
+ngrok http 5000
+# Use: https://<ngrok-url>/api/jira/webhook
+```
