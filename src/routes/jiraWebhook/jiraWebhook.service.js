@@ -1,5 +1,6 @@
 const { logger } = require("../../services/log.service");
 
+const TRIGGER_LABEL = "claude-code";
 const SUPPORTED_EVENTS = [
     "jira:issue_created",
     "jira:issue_updated",
@@ -15,27 +16,34 @@ async function processWebhook(payload, txnId) {
         return { processed: false, reason: "Unsupported event type" };
     }
 
+    const issueData = extractIssueData(issue);
+    const hasClaudeCodeLabel = issueData.labels.includes(TRIGGER_LABEL);
+
+    // For issue_created: only proceed if it already has the trigger label
     if (webhookEvent === "jira:issue_created") {
-        return await handleIssueCreated(issue, txnId);
+        if (!hasClaudeCodeLabel) {
+            logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] Issue missing "${TRIGGER_LABEL}" label, skipping - issueKey: ${issue.key}`);
+            return { processed: false, reason: `Missing "${TRIGGER_LABEL}" label` };
+        }
+        return await handleTrigger(issueData, txnId);
     }
 
+    // For issue_updated: only proceed if the trigger label was just added
     if (webhookEvent === "jira:issue_updated") {
-        return await handleIssueUpdated(issue, changelog, txnId);
+        const labelAdded = wasLabelAdded(changelog, TRIGGER_LABEL);
+
+        if (!labelAdded) {
+            logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] "${TRIGGER_LABEL}" label not added in this update, skipping - issueKey: ${issue.key}`);
+            return { processed: false, reason: `"${TRIGGER_LABEL}" label not added` };
+        }
+        return await handleTrigger(issueData, txnId);
     }
 
     return { processed: false, reason: "No handler matched" };
 }
 
-async function handleIssueCreated(issue, txnId) {
-    logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueCreated] Handling issue created event - issueKey: ${issue.key}, summary: ${issue.fields?.summary}`);
-
-    const issueData = extractIssueData(issue);
-
-    // Check if issue has assignee or relevant labels
-    if (!issueData.assignee && issueData.labels.length === 0) {
-        logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueCreated] Issue has no assignee or labels, skipping - issueKey: ${issue.key}`);
-        return { processed: false, reason: "No assignee or labels" };
-    }
+async function handleTrigger(issueData, txnId) {
+    logger.info(`[${txnId}] jiraWebhook.service.js [handleTrigger] Triggering automation - issueKey: ${issueData.key}, summary: ${issueData.summary}`);
 
     // TODO: Trigger automation workflow
     // 1. Fetch repository details
@@ -43,41 +51,29 @@ async function handleIssueCreated(issue, txnId) {
     // 3. Claude Code implements the task
     // 4. Create PR for the branch
 
-    logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueCreated] Issue queued for processing - issueKey: ${issue.key}`);
+    logger.info(`[${txnId}] jiraWebhook.service.js [handleTrigger] Issue queued for processing - issueKey: ${issueData.key}`);
 
     return {
         processed: true,
-        issueKey: issue.key,
+        issueKey: issueData.key,
         action: "queued_for_automation",
         data: issueData,
     };
 }
 
-async function handleIssueUpdated(issue, changelog, txnId) {
-    logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueUpdated] Handling issue updated event - issueKey: ${issue.key}`);
-
-    const issueData = extractIssueData(issue);
-    const relevantChanges = extractRelevantChanges(changelog);
-
-    if (relevantChanges.length === 0) {
-        logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueUpdated] No relevant changes detected, skipping - issueKey: ${issue.key}`);
-        return { processed: false, reason: "No relevant changes" };
+function wasLabelAdded(changelog, labelName) {
+    if (!changelog?.items) {
+        return false;
     }
 
-    logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueUpdated] Relevant changes detected - issueKey: ${issue.key}`);
-    logger.debug({ changes: relevantChanges }, `[${txnId}] jiraWebhook.service.js [handleIssueUpdated] Changes`);
+    const labelChange = changelog.items.find(item => item.field === "labels");
+    if (!labelChange) {
+        return false;
+    }
 
-    // TODO: Trigger automation based on changes
-    // - If assignee added: start automation
-    // - If label added: check if it's an automation trigger label
-
-    return {
-        processed: true,
-        issueKey: issue.key,
-        action: "changes_detected",
-        changes: relevantChanges,
-        data: issueData,
-    };
+    // Check if the label appears in "toString" (added labels)
+    const addedLabels = labelChange.toString || "";
+    return addedLabels.split(" ").includes(labelName);
 }
 
 function extractIssueData(issue) {
@@ -101,22 +97,6 @@ function extractIssueData(issue) {
         },
         issueType: fields.issuetype?.name || "",
     };
-}
-
-function extractRelevantChanges(changelog) {
-    if (!changelog?.items) {
-        return [];
-    }
-
-    const relevantFields = ["assignee", "labels", "status"];
-
-    return changelog.items
-        .filter(item => relevantFields.includes(item.field))
-        .map(item => ({
-            field: item.field,
-            from: item.fromString,
-            to: item.toString,
-        }));
 }
 
 module.exports = {

@@ -15,7 +15,7 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
 ### Workflow
 
 ```
-1. Jira ticket created → assigned or labeled with "AI-SE"
+1. Jira ticket created → labeled with "claude-code"
 2. Jira webhook triggers POST /api/jira/webhook
 3. Backend processes the trigger:
    - Validates webhook payload
@@ -267,11 +267,11 @@ Files: `src/envs/.env.local`, `src/envs/.env.stg`, `src/envs/.env.prod`
 
 ## Jira Webhook
 
-**Trigger label:** `AI-SE`
+**Trigger label:** `claude-code`
 
 **Supported events:**
-- `jira:issue_created` - New issue with assignee or labels
-- `jira:issue_updated` - Changes to assignee, labels, or status
+- `jira:issue_created` - Only if issue has `claude-code` label
+- `jira:issue_updated` - Only if `claude-code` label was just added
 
 **Webhook URL:** `https://<your-domain>/api/jira/webhook`
 
