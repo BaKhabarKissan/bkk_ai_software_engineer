@@ -1,16 +1,16 @@
-const pino = require('pino');
-const path = require('path');
+const pino = require("pino");
+const path = require("path");
 
 const logger = pino({
-  level: process.env.LOG_LEVEL || 'info',
-  transport: {
-    target: 'pino-pretty',
-    options: {
-      colorize: true,
-      translateTime: 'SYS:standard',
-      ignore: 'pid,hostname',
+    level: process.env.LOG_LEVEL || "info",
+    transport: {
+        target: "pino-pretty",
+        options: {
+            colorize: true,
+            translateTime: "SYS:standard",
+            ignore: "pid,hostname",
+        },
     },
-  },
 });
 
 /**
@@ -18,7 +18,7 @@ const logger = pino({
  * @returns {string} 6-digit transaction ID
  */
 function generateTxnId() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+    return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
 /**
@@ -30,10 +30,10 @@ function generateTxnId() {
  * @returns {string} Formatted log message
  */
 function formatMessage(txnId, file, fn, message) {
-  if (txnId) {
-    return `[${txnId}] [${file}] [${fn}] ${message}`;
-  }
-  return `[${file}] [${fn}] ${message}`;
+    if (txnId) {
+        return `[${txnId}] [${file}] [${fn}] ${message}`;
+    }
+    return `[${file}] [${fn}] ${message}`;
 }
 
 /**
@@ -43,26 +43,26 @@ function formatMessage(txnId, file, fn, message) {
  * @returns {object} Logger methods with context
  */
 function createLogger(filename) {
-  const file = path.basename(filename);
+    const file = path.basename(filename);
 
-  return {
-    info: (fn, message, data = {}) => {
-      const txnId = data.txnId;
-      logger.info({ ...data }, formatMessage(txnId, file, fn, message));
-    },
-    error: (fn, message, data = {}) => {
-      const txnId = data.txnId;
-      logger.error({ ...data }, formatMessage(txnId, file, fn, message));
-    },
-    warn: (fn, message, data = {}) => {
-      const txnId = data.txnId;
-      logger.warn({ ...data }, formatMessage(txnId, file, fn, message));
-    },
-    debug: (fn, message, data = {}) => {
-      const txnId = data.txnId;
-      logger.debug({ ...data }, formatMessage(txnId, file, fn, message));
-    },
-  };
+    return {
+        info: (fn, message, data = {}) => {
+            const txnId = data.txnId;
+            logger.info({ ...data }, formatMessage(txnId, file, fn, message));
+        },
+        error: (fn, message, data = {}) => {
+            const txnId = data.txnId;
+            logger.error({ ...data }, formatMessage(txnId, file, fn, message));
+        },
+        warn: (fn, message, data = {}) => {
+            const txnId = data.txnId;
+            logger.warn({ ...data }, formatMessage(txnId, file, fn, message));
+        },
+        debug: (fn, message, data = {}) => {
+            const txnId = data.txnId;
+            logger.debug({ ...data }, formatMessage(txnId, file, fn, message));
+        },
+    };
 }
 
 module.exports = { logger, createLogger, generateTxnId };
