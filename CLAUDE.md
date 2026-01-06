@@ -209,3 +209,25 @@ log.debug("functionName", "debug info", { txnId });
 |----------|-------------|---------|
 | PORT | Server port | 5000 |
 | LOG_LEVEL | Pino log level (trace/debug/info/warn/error) | info |
+| GITHUB_ACCESS_TOKEN | GitHub API access token | - |
+| JIRA_API_TOKEN | Atlassian Jira API token | - |
+
+### Env File Style
+
+Always use table-aligned format with double-quoted values:
+
+```
+KEY_NAME                                            ="value"
+```
+
+Example:
+```
+# Server Configuration
+PORT                                                ="5000"
+LOG_LEVEL                                           ="info"
+
+# GitHub Configuration
+GITHUB_ACCESS_TOKEN                                 ="ghp_xxx..."
+```
+
+Files: `src/envs/.env.local`, `src/envs/.env.stg`, `src/envs/.env.prod`
