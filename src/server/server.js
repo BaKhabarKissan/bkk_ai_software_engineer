@@ -6,6 +6,8 @@ const {
     requestLoggerMiddleware,
     errorHandlerMiddleware,
 } = require("../middlewares");
+const chatRoutes = require("../routes/chat");
+const jiraWebhookRoutes = require("../routes/jiraWebhook");
 
 const log = getLogger(__filename);
 
@@ -21,8 +23,8 @@ function createServer() {
     app.use(requestLoggerMiddleware);
 
     // Routes
-    const chatRoutes = require("../routes/chat");
     app.use("/api/chat", chatRoutes);
+    app.use("/api/jira/webhook", jiraWebhookRoutes);
 
     // Health check
     app.get("/health", (req, res) => {

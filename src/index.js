@@ -3,10 +3,10 @@ const { getLogger } = require("./services/log.service");
 
 const log = getLogger(__filename);
 
-const PORT = process.env.PORT || 5000;
+const port = process.env.PORT;
 
 const app = createServer();
 
-app.listen(PORT, () => {
-    log.info("listen", `Server is running on port ${PORT}`);
+app.listen(port, () => {
+    log.info("listen", `Server is running on port ${port}`);
 });
