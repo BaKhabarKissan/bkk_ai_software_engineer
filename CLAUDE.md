@@ -33,7 +33,12 @@ Run `npm run lint:fix` before committing.
 ```
 src/
   index.js                 # Entry point, loads dotenv and starts server
-  server/server.js         # Express app configuration, middleware, routes
+  server/server.js         # Express app configuration, routes
+  middlewares/             # Express middlewares
+    index.js               # Middleware exports
+    txnId.middleware.js    # Transaction ID generator
+    requestLogger.middleware.js  # Request logging
+    errorHandler.middleware.js   # Global error handler
   services/                # Shared services
     log.service.js         # Logger service
     response.service.js    # Response utility (success/failure)
