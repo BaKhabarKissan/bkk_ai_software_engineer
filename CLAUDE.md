@@ -35,34 +35,143 @@ src/
   index.js                 # Entry point, loads dotenv and starts server
   server/server.js         # Express app configuration, middleware, routes
   services/                # Shared services
-    log.service.js         # Logger service (wraps utils/logger)
+    log.service.js         # Logger service
+    response.service.js    # Response utility (success/failure)
+    validation.service.js  # Joi validation middleware
   utils/
     logger.js              # Pino logger with txnId support
   routes/<feature>/        # Feature-based route modules
-    index.js               # Router definition
+    index.js               # Router definition with validation middleware
     <feature>.controller.js
     <feature>.service.js
-    <feature>.validation.js
+    <feature>.validation.js  # Joi schemas only
   envs/
     .env.local             # Local environment variables
 ```
 
-**Layered pattern per feature module:**
-- `controller` - HTTP request/response handling
-- `service` - Business logic
-- `validation` - Request validation middleware
+## Feature Module Pattern
+
+### routes/index.js
+```javascript
+const express = require("express");
+const { validateRequest } = require("../../services/validation.service");
+const controller = require("./feature.controller");
+const { schema } = require("./feature.validation");
+
+const router = express.Router();
+
+router.get("/", controller.list);
+router.post("/", validateRequest(schema), controller.create);
+
+module.exports = router;
+```
+
+### validation.js (Joi schemas only)
+```javascript
+const Joi = require("joi");
+
+const createSchema = Joi.object({
+    name: Joi.string().trim().min(1).required(),
+});
+
+module.exports = { createSchema };
+```
+
+### controller.js
+```javascript
+const { getLogger } = require("../../services/log.service");
+const response = require("../../services/response.service");
+const service = require("./feature.service");
+
+const log = getLogger(__filename);
+
+async function create(req, res, next) {
+    const { txnId } = req;
+    log.info("create", "Handling request", { txnId });
+
+    try {
+        const result = await service.create(req.body, txnId);
+        log.info("create", "Success", { txnId });
+        return response.success(res, "Created successfully", result, 201);
+    } catch (error) {
+        log.error("create", "Failed", { txnId, error: error.message });
+        next(error);
+    }
+}
+
+module.exports = { create };
+```
+
+### service.js
+```javascript
+const { getLogger } = require("../../services/log.service");
+
+const log = getLogger(__filename);
+
+async function create(data, txnId) {
+    log.info("create", "Processing", { txnId });
+    // Business logic here
+    return result;
+}
+
+module.exports = { create };
+```
+
+## Response Service
+
+Handles `res.json()` internally with consistent structure:
+
+```javascript
+const response = require("../../services/response.service");
+
+// Success (default status 200)
+response.success(res, "Message", data);
+response.success(res, "Created", data, 201);
+
+// Failure (default status 400)
+response.failure(res, "Error message");
+response.failure(res, "Not found", {}, 404);
+response.failure(res, "Server error", {}, 500);
+```
+
+**Response structure:**
+```json
+{
+    "success": true,
+    "message": "Message",
+    "data": { ... }
+}
+```
+
+## Validation Service
+
+Middleware factory using Joi schemas:
+
+```javascript
+const { validateRequest } = require("../../services/validation.service");
+
+// Validate body (default)
+router.post("/", validateRequest(schema), controller.create);
+
+// Validate query params
+router.get("/", validateRequest(querySchema, "query"), controller.list);
+
+// Validate URL params
+router.get("/:id", validateRequest(paramsSchema, "params"), controller.get);
+```
 
 ## Logging
 
 Log format: `[txnId] [file] [function] message`
 
-Each request gets a 6-digit transaction ID (`req.txnId`) for tracing. Pass `txnId` in the data object:
-
 ```javascript
 const { getLogger } = require("../../services/log.service");
 const log = getLogger(__filename);
 
-log.info("functionName", "message", { txnId: req.txnId });
+log.info("functionName", "message", { txnId });
+log.error("functionName", "error", { txnId, error: err.message });
+log.warn("functionName", "warning", { txnId });
+log.debug("functionName", "debug info", { txnId });
 ```
 
 ## Environment Variables
