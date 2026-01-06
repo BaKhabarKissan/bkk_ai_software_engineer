@@ -1,6 +1,4 @@
-const { getLogger } = require("../../services/log.service");
-
-const log = getLogger(__filename);
+const { logger } = require("../../services/log.service");
 
 const SUPPORTED_EVENTS = [
     "jira:issue_created",
@@ -8,19 +6,12 @@ const SUPPORTED_EVENTS = [
 ];
 
 async function processWebhook(payload, txnId) {
-    log.info("processWebhook", "Processing Jira webhook", {
-        txnId,
-        event: payload.webhookEvent,
-        issueKey: payload.issue?.key,
-    });
+    logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] Processing Jira webhook - event: ${payload.webhookEvent}, issueKey: ${payload.issue?.key}`);
 
     const { webhookEvent, issue, changelog } = payload;
 
     if (!SUPPORTED_EVENTS.includes(webhookEvent)) {
-        log.info("processWebhook", "Ignoring unsupported event", {
-            txnId,
-            event: webhookEvent,
-        });
+        logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] Ignoring unsupported event: ${webhookEvent}`);
         return { processed: false, reason: "Unsupported event type" };
     }
 
@@ -36,20 +27,13 @@ async function processWebhook(payload, txnId) {
 }
 
 async function handleIssueCreated(issue, txnId) {
-    log.info("handleIssueCreated", "Handling issue created event", {
-        txnId,
-        issueKey: issue.key,
-        summary: issue.fields?.summary,
-    });
+    logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueCreated] Handling issue created event - issueKey: ${issue.key}, summary: ${issue.fields?.summary}`);
 
     const issueData = extractIssueData(issue);
 
     // Check if issue has assignee or relevant labels
     if (!issueData.assignee && issueData.labels.length === 0) {
-        log.info("handleIssueCreated", "Issue has no assignee or labels, skipping", {
-            txnId,
-            issueKey: issue.key,
-        });
+        logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueCreated] Issue has no assignee or labels, skipping - issueKey: ${issue.key}`);
         return { processed: false, reason: "No assignee or labels" };
     }
 
@@ -59,10 +43,7 @@ async function handleIssueCreated(issue, txnId) {
     // 3. Claude Code implements the task
     // 4. Create PR for the branch
 
-    log.info("handleIssueCreated", "Issue queued for processing", {
-        txnId,
-        issueKey: issue.key,
-    });
+    logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueCreated] Issue queued for processing - issueKey: ${issue.key}`);
 
     return {
         processed: true,
@@ -73,27 +54,18 @@ async function handleIssueCreated(issue, txnId) {
 }
 
 async function handleIssueUpdated(issue, changelog, txnId) {
-    log.info("handleIssueUpdated", "Handling issue updated event", {
-        txnId,
-        issueKey: issue.key,
-    });
+    logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueUpdated] Handling issue updated event - issueKey: ${issue.key}`);
 
     const issueData = extractIssueData(issue);
     const relevantChanges = extractRelevantChanges(changelog);
 
     if (relevantChanges.length === 0) {
-        log.info("handleIssueUpdated", "No relevant changes detected, skipping", {
-            txnId,
-            issueKey: issue.key,
-        });
+        logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueUpdated] No relevant changes detected, skipping - issueKey: ${issue.key}`);
         return { processed: false, reason: "No relevant changes" };
     }
 
-    log.info("handleIssueUpdated", "Relevant changes detected", {
-        txnId,
-        issueKey: issue.key,
-        changes: relevantChanges,
-    });
+    logger.info(`[${txnId}] jiraWebhook.service.js [handleIssueUpdated] Relevant changes detected - issueKey: ${issue.key}`);
+    logger.debug({ changes: relevantChanges }, `[${txnId}] jiraWebhook.service.js [handleIssueUpdated] Changes`);
 
     // TODO: Trigger automation based on changes
     // - If assignee added: start automation

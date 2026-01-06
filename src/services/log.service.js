@@ -1,7 +1,3 @@
-const { createLogger, generateTxnId } = require("../utils/logger");
+const { logger, generateTxnId } = require("../utils/logger");
 
-function getLogger(filename) {
-    return createLogger(filename);
-}
-
-module.exports = { getLogger, generateTxnId };
+module.exports = { logger, generateTxnId };

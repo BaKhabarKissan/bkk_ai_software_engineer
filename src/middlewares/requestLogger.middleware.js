@@ -1,12 +1,10 @@
-const { getLogger } = require("../services/log.service");
-
-const log = getLogger(__filename);
+const { logger } = require("../services/log.service");
 
 /**
  * Middleware to log incoming requests
  */
 function requestLoggerMiddleware(req, res, next) {
-    log.info("requestLogger", `${req.method} ${req.url}`, { txnId: req.txnId });
+    logger.info(`[${req.txnId}] requestLogger.middleware.js [requestLogger] ${req.method} ${req.url}`);
     next();
 }
 

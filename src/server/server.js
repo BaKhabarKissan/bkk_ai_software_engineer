@@ -1,5 +1,5 @@
 const express = require("express");
-const { getLogger } = require("../services/log.service");
+const { logger } = require("../services/log.service");
 const response = require("../services/response.service");
 const {
     txnIdMiddleware,
@@ -9,10 +9,8 @@ const {
 const chatRoutes = require("../routes/chat");
 const jiraWebhookRoutes = require("../routes/jiraWebhook");
 
-const log = getLogger(__filename);
-
 function createServer() {
-    log.info("createServer", "Initializing Express application");
+    logger.info("server.js [createServer] Initializing Express application");
 
     const app = express();
 
@@ -34,7 +32,7 @@ function createServer() {
     // Error handling middleware (must be last)
     app.use(errorHandlerMiddleware);
 
-    log.info("createServer", "Express application initialized");
+    logger.info("server.js [createServer] Express application initialized");
 
     return app;
 }

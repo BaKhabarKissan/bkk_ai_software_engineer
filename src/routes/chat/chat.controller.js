@@ -1,36 +1,34 @@
-const { getLogger } = require("../../services/log.service");
+const { logger } = require("../../services/log.service");
 const response = require("../../services/response.service");
 const chatService = require("./chat.service");
 
-const log = getLogger(__filename);
-
 async function sendMessage(req, res, next) {
     const { txnId } = req;
-    log.info("sendMessage", "Handling send message request", { txnId });
+    logger.info(`[${txnId}] chat.controller.js [sendMessage] Handling send message request`);
 
     try {
         const { message } = req.body;
         const result = await chatService.sendMessage(message, txnId);
 
-        log.info("sendMessage", "Message sent successfully", { txnId });
+        logger.info(`[${txnId}] chat.controller.js [sendMessage] Message sent successfully`);
         return response.success(res, "Message sent successfully", result, 201);
     } catch (error) {
-        log.error("sendMessage", "Failed to send message", { txnId, error: error.message });
+        logger.error(`[${txnId}] chat.controller.js [sendMessage] Failed to send message: ${error.message}`);
         next(error);
     }
 }
 
 async function getMessages(req, res, next) {
     const { txnId } = req;
-    log.info("getMessages", "Handling get messages request", { txnId });
+    logger.info(`[${txnId}] chat.controller.js [getMessages] Handling get messages request`);
 
     try {
         const messages = await chatService.getMessages(txnId);
 
-        log.info("getMessages", "Messages retrieved successfully", { txnId });
+        logger.info(`[${txnId}] chat.controller.js [getMessages] Messages retrieved successfully`);
         return response.success(res, "Messages retrieved successfully", { messages });
     } catch (error) {
-        log.error("getMessages", "Failed to get messages", { txnId, error: error.message });
+        logger.error(`[${txnId}] chat.controller.js [getMessages] Failed to get messages: ${error.message}`);
         next(error);
     }
 }

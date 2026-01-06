@@ -1,9 +1,8 @@
-const { getLogger } = require("../../services/log.service");
-
-const log = getLogger(__filename);
+const { logger } = require("../../services/log.service");
 
 async function sendMessage(message, txnId) {
-    log.info("sendMessage", "Processing message", { txnId, message });
+    logger.info(`[${txnId}] chat.service.js [sendMessage] Processing message`);
+    logger.debug({ message }, `[${txnId}] chat.service.js [sendMessage] Message content`);
 
     // Business logic here
     const response = {
@@ -12,17 +11,17 @@ async function sendMessage(message, txnId) {
         timestamp: new Date().toISOString(),
     };
 
-    log.info("sendMessage", "Message processed successfully", { txnId });
+    logger.info(`[${txnId}] chat.service.js [sendMessage] Message processed successfully`);
     return response;
 }
 
 async function getMessages(txnId) {
-    log.info("getMessages", "Fetching messages", { txnId });
+    logger.info(`[${txnId}] chat.service.js [getMessages] Fetching messages`);
 
     // Business logic here
     const messages = [];
 
-    log.info("getMessages", "Messages fetched successfully", { txnId });
+    logger.info(`[${txnId}] chat.service.js [getMessages] Messages fetched successfully`);
     return messages;
 }
 

@@ -1,7 +1,5 @@
-const { getLogger } = require("./log.service");
+const { logger } = require("./log.service");
 const response = require("./response.service");
-
-const log = getLogger(__filename);
 
 /**
  * Middleware factory for request validation using Joi schemas
@@ -21,7 +19,7 @@ function validateRequest(schema, source = "body") {
 
         if (error) {
             const errorMessage = error.details.map((d) => d.message).join(", ");
-            log.warn("validateRequest", `Validation failed: ${errorMessage}`, { txnId });
+            logger.warn(`[${txnId}] validation.service.js [validateRequest] Validation failed: ${errorMessage}`);
             return response.failure(res, errorMessage);
         }
 
