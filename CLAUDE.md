@@ -4,7 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
+**Agentic AI Backend for Jira Task Automation**
+
 Express.js 5.x web application (CommonJS modules) with Pino logging.
+
+### Purpose
+
+Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled, this system automatically implements the task using Claude Code.
+
+### Workflow
+
+```
+1. Jira ticket created → assigned or labeled
+2. Jira webhook triggers this backend
+3. Backend processes the trigger:
+   - Fetches repository details
+   - Creates branch with naming template
+   - Claude Code implements the task
+   - Creates PR for the branch
+```
+
+### Planned Integrations
+
+- **Jira** - Webhook receiver, ticket details
+- **GitHub/Git** - Clone repo, create branch, push, create PR
+- **Claude Code** - AI agent to implement the task
 
 ## Commands
 
