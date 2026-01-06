@@ -1,5 +1,3 @@
-require("dotenv").config({ path: "./src/envs/.env.local" });
-
 const { createServer } = require("./server/server");
 const { getLogger } = require("./services/log.service");
 
