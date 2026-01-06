@@ -1,4 +1,5 @@
 const { getLogger } = require("./log.service");
+const response = require("./response.service");
 
 const log = getLogger(__filename);
 
@@ -21,9 +22,7 @@ function validateRequest(schema, source = "body") {
         if (error) {
             const errorMessage = error.details.map((d) => d.message).join(", ");
             log.warn("validateRequest", `Validation failed: ${errorMessage}`, { txnId });
-            return res.status(400).json({
-                error: { message: errorMessage },
-            });
+            return response.failure(res, errorMessage);
         }
 
         req[source] = value;

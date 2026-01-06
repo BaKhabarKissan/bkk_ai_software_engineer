@@ -1,5 +1,6 @@
 const express = require("express");
 const { getLogger, generateTxnId } = require("../services/log.service");
+const response = require("../services/response.service");
 
 const log = getLogger(__filename);
 
@@ -30,17 +31,13 @@ function createServer() {
 
     // Health check
     app.get("/health", (req, res) => {
-        res.json({ status: "ok" });
+        return response.success(res, "Service is healthy", { status: "ok" });
     });
 
     // Error handling middleware
     app.use((err, req, res, next) => {
         log.error("errorHandler", err.message, { txnId: req.txnId, stack: err.stack });
-        res.status(err.status || 500).json({
-            error: {
-                message: err.message || "Internal Server Error",
-            },
-        });
+        return response.failure(res, err.message || "Internal Server Error", {}, err.status || 500);
     });
 
     log.info("createServer", "Express application initialized");
