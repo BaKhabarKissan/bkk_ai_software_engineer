@@ -12,9 +12,21 @@ Express.js 5.x web application (CommonJS modules) with Pino logging.
 npm install       # Install dependencies
 npm run dev       # Start with nodemon (auto-reload)
 npm start         # Start production server
+npm run lint      # Check for linting errors
+npm run lint:fix  # Auto-fix linting errors
 ```
 
 No tests configured yet.
+
+## Code Style
+
+ESLint enforced rules:
+- 4-space indentation
+- Double quotes
+- Semicolons required
+- Trailing newline required
+
+Run `npm run lint:fix` before committing.
 
 ## Architecture
 
@@ -47,10 +59,10 @@ Log format: `[txnId] [file] [function] message`
 Each request gets a 6-digit transaction ID (`req.txnId`) for tracing. Pass `txnId` in the data object:
 
 ```javascript
-const { getLogger } = require('../../services/log.service');
+const { getLogger } = require("../../services/log.service");
 const log = getLogger(__filename);
 
-log.info('functionName', 'message', { txnId: req.txnId });
+log.info("functionName", "message", { txnId: req.txnId });
 ```
 
 ## Environment Variables
