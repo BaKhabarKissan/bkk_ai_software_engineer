@@ -1,4 +1,5 @@
 const { logger } = require("../../services/log.service");
+const jiraService = require("../../services/jira.service");
 
 const { JIRA_TRIGGER_LABEL } = process.env;
 
@@ -46,6 +47,17 @@ async function processWebhook(payload, txnId) {
 async function handleTrigger(issueData, txnId) {
     logger.info(`[${txnId}] jiraWebhook.service.js [handleTrigger] Triggering automation - issueKey: ${issueData.key}, summary: ${issueData.summary}`);
 
+    // Fetch complete issue details from Jira API
+    let completeIssue;
+    try {
+        completeIssue = await jiraService.getIssue(issueData.key, txnId);
+        logger.info(`[${txnId}] jiraWebhook.service.js [handleTrigger] Complete issue fetched - issueKey: ${issueData.key}`);
+        logger.debug(completeIssue, `[${txnId}] jiraWebhook.service.js [handleTrigger] Complete issue data`);
+    } catch (error) {
+        logger.error(`[${txnId}] jiraWebhook.service.js [handleTrigger] Failed to fetch complete issue: ${error.message}`);
+        throw error;
+    }
+
     // TODO: Trigger automation workflow
     // 1. Fetch repository details
     // 2. Create branch with naming template
@@ -58,7 +70,7 @@ async function handleTrigger(issueData, txnId) {
         processed: true,
         issueKey: issueData.key,
         action: "queued_for_automation",
-        data: issueData,
+        data: completeIssue,
     };
 }
 

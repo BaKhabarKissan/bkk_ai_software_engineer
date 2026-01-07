@@ -20,6 +20,7 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
 3. Backend processes the trigger:
    - Validates webhook payload
    - Extracts issue data (key, summary, description, labels)
+   - Fetches complete issue details via Jira API
    - TODO: Fetches repository details
    - TODO: Creates branch with naming template
    - TODO: Claude Code implements the task
@@ -32,6 +33,10 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
   - Handles `jira:issue_created` and `jira:issue_updated` events
   - Filters by assignee and labels
   - Detects changes to assignee, labels, status
+- **Jira API** - ✅ Implemented (`src/services/jira.service.js`)
+  - Fetches complete issue details including comments, attachments, links
+  - Handles Atlassian Document Format (ADF) for descriptions
+  - Uses `jira.js` library with basic auth
 
 ### Planned Integrations
 
@@ -236,6 +241,8 @@ logger.error(`[${txnId}] file.js [functionName] Error: ${error.message}`);
 | PORT | Server port | 5000 |
 | LOG_LEVEL | Pino log level (trace/debug/info/warn/error) | info |
 | GITHUB_ACCESS_TOKEN | GitHub API access token | - |
+| JIRA_HOST | Jira Cloud instance URL (e.g., https://your-domain.atlassian.net) | - |
+| JIRA_EMAIL | Email for Jira API authentication | - |
 | JIRA_API_TOKEN | Atlassian Jira API token | - |
 | JIRA_TRIGGER_LABEL | Label that triggers automation | claude-code |
 
