@@ -1,7 +1,8 @@
 const { logger } = require("../../services/log.service");
 
-const TRIGGER_LABEL = "claude-code";
-const SUPPORTED_EVENTS = [
+const { JIRA_TRIGGER_LABEL } = process.env;
+
+const supportedEvents = [
     "jira:issue_created",
     "jira:issue_updated",
 ];
@@ -11,30 +12,30 @@ async function processWebhook(payload, txnId) {
 
     const { webhookEvent, issue, changelog } = payload;
 
-    if (!SUPPORTED_EVENTS.includes(webhookEvent)) {
+    if (!supportedEvents.includes(webhookEvent)) {
         logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] Ignoring unsupported event: ${webhookEvent}`);
         return { processed: false, reason: "Unsupported event type" };
     }
 
     const issueData = extractIssueData(issue);
-    const hasClaudeCodeLabel = issueData.labels.includes(TRIGGER_LABEL);
+    const hasTriggerLabel = issueData.labels.includes(JIRA_TRIGGER_LABEL);
 
     // For issue_created: only proceed if it already has the trigger label
     if (webhookEvent === "jira:issue_created") {
-        if (!hasClaudeCodeLabel) {
-            logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] Issue missing "${TRIGGER_LABEL}" label, skipping - issueKey: ${issue.key}`);
-            return { processed: false, reason: `Missing "${TRIGGER_LABEL}" label` };
+        if (!hasTriggerLabel) {
+            logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] Issue missing "${JIRA_TRIGGER_LABEL}" label, skipping - issueKey: ${issue.key}`);
+            return { processed: false, reason: `Missing "${JIRA_TRIGGER_LABEL}" label` };
         }
         return await handleTrigger(issueData, txnId);
     }
 
     // For issue_updated: only proceed if the trigger label was just added
     if (webhookEvent === "jira:issue_updated") {
-        const labelAdded = wasLabelAdded(changelog, TRIGGER_LABEL);
+        const labelAdded = wasLabelAdded(changelog, JIRA_TRIGGER_LABEL);
 
         if (!labelAdded) {
-            logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] "${TRIGGER_LABEL}" label not added in this update, skipping - issueKey: ${issue.key}`);
-            return { processed: false, reason: `"${TRIGGER_LABEL}" label not added` };
+            logger.info(`[${txnId}] jiraWebhook.service.js [processWebhook] "${JIRA_TRIGGER_LABEL}" label not added in this update, skipping - issueKey: ${issue.key}`);
+            return { processed: false, reason: `"${JIRA_TRIGGER_LABEL}" label not added` };
         }
         return await handleTrigger(issueData, txnId);
     }

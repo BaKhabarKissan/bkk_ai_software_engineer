@@ -59,6 +59,8 @@ ESLint enforced rules:
 - Semicolons required
 - Trailing newline required
 - **camelCase** for folder and file names in routes
+- **camelCase** for variables (not SCREAMING_SNAKE_CASE)
+- **Destructure env vars** at the top below imports: `const { PORT } = process.env;`
 
 Run `npm run lint:fix` before committing.
 
@@ -235,6 +237,7 @@ logger.error(`[${txnId}] file.js [functionName] Error: ${error.message}`);
 | LOG_LEVEL | Pino log level (trace/debug/info/warn/error) | info |
 | GITHUB_ACCESS_TOKEN | GitHub API access token | - |
 | JIRA_API_TOKEN | Atlassian Jira API token | - |
+| JIRA_TRIGGER_LABEL | Label that triggers automation | claude-code |
 
 ### Env File Style
 
