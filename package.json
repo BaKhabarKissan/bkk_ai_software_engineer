@@ -7,6 +7,9 @@
         "start:local": "dotenv -e ./src/envs/.env.local -- nodemon src/index.js",
         "start:stg": "dotenv -e ./src/envs/.env.stg -- node src/index.js",
         "start:prod": "dotenv -e ./src/envs/.env.prod -- node src/index.js",
+        "worker:local": "dotenv -e ./src/envs/.env.local -- node src/workers/automation.worker.js",
+        "worker:stg": "dotenv -e ./src/envs/.env.stg -- node src/workers/automation.worker.js",
+        "worker:prod": "dotenv -e ./src/envs/.env.prod -- node src/workers/automation.worker.js",
         "lint": "eslint src/",
         "lint:fix": "eslint src/ --fix",
         "test": "echo \"Error: no test specified\" && exit 1"
@@ -17,6 +20,7 @@
     "type": "commonjs",
     "dependencies": {
         "@octokit/rest": "^22.0.1",
+        "amqplib": "^0.10.9",
         "dotenv": "^17.2.3",
         "express": "^5.2.1",
         "jira.js": "^5.2.2",

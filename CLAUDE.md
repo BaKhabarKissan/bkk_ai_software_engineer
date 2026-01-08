@@ -21,6 +21,8 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
    - Validates webhook payload
    - Extracts issue data (key, summary, description, labels)
    - Fetches complete issue details via Jira API
+   - Publishes task to RabbitMQ queue
+4. Worker consumes task from queue:
    - TODO: Fetches repository details
    - TODO: Creates branch with naming template
    - TODO: Claude Code implements the task
@@ -37,6 +39,11 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
   - Fetches complete issue details including comments, attachments, links
   - Handles Atlassian Document Format (ADF) for descriptions
   - Uses `jira.js` library with basic auth
+- **RabbitMQ** - ✅ Implemented (`src/services/rabbitmq.service.js`, `src/services/queue.service.js`)
+  - Message queue for async task processing
+  - Durable queues with persistent messages
+  - Dead letter exchange for failed tasks
+  - Worker consumer (`src/workers/automation.worker.js`)
 
 ### Planned Integrations
 
@@ -46,12 +53,15 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
 ## Commands
 
 ```bash
-npm install        # Install dependencies
-npm run start:local # Start with local env (nodemon)
-npm run dev        # Start with nodemon (auto-reload)
-npm start          # Start production server
-npm run lint       # Check for linting errors
-npm run lint:fix   # Auto-fix linting errors
+npm install          # Install dependencies
+npm run start:local  # Start server with local env (nodemon)
+npm run start:stg    # Start server with staging env
+npm run start:prod   # Start server with production env
+npm run worker:local # Start worker with local env
+npm run worker:stg   # Start worker with staging env
+npm run worker:prod  # Start worker with production env
+npm run lint         # Check for linting errors
+npm run lint:fix     # Auto-fix linting errors
 ```
 
 No tests configured yet.
@@ -84,6 +94,11 @@ src/
     log.service.js         # Logger service (exports native Pino logger)
     response.service.js    # Response utility (success/failure)
     validation.service.js  # Joi validation middleware
+    jira.service.js        # Jira API client
+    rabbitmq.service.js    # RabbitMQ connection management
+    queue.service.js       # Queue operations (publish/consume)
+  workers/                 # Background workers
+    automation.worker.js   # Task consumer for automation queue
   utils/
     logger.utils.js        # Pino logger configuration
   routes/<featureName>/    # Feature-based route modules (camelCase)
@@ -245,6 +260,9 @@ logger.error(`[${txnId}] file.js [functionName] Error: ${error.message}`);
 | JIRA_EMAIL | Email for Jira API authentication | - |
 | JIRA_API_TOKEN | Atlassian Jira API token | - |
 | JIRA_TRIGGER_LABEL | Label that triggers automation | claude-code |
+| RABBITMQ_URL | RabbitMQ connection URL | amqp://guest:guest@localhost:5672 |
+| RABBITMQ_QUEUE_AUTOMATION | Queue name for automation tasks | jira-automation-tasks |
+| RABBITMQ_QUEUE_DLX | Dead letter queue name | jira-automation-dlx |
 
 ### Env File Style
 

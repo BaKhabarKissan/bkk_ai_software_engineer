@@ -1,5 +1,6 @@
 const { logger } = require("../../services/log.service");
 const jiraService = require("../../services/jira.service");
+const queueService = require("../../services/queue.service");
 
 const { JIRA_TRIGGER_LABEL } = process.env;
 
@@ -58,19 +59,25 @@ async function handleTrigger(issueData, txnId) {
         throw error;
     }
 
-    // TODO: Trigger automation workflow
-    // 1. Fetch repository details
-    // 2. Create branch with naming template
-    // 3. Claude Code implements the task
-    // 4. Create PR for the branch
+    // Publish task to queue for async processing
+    const task = {
+        issueKey: issueData.key,
+        issue: completeIssue,
+        timestamp: Date.now(),
+    };
 
-    logger.info(`[${txnId}] jiraWebhook.service.js [handleTrigger] Issue queued for processing - issueKey: ${issueData.key}`);
+    try {
+        await queueService.publishTask(task, txnId);
+        logger.info(`[${txnId}] jiraWebhook.service.js [handleTrigger] Task published to queue - issueKey: ${issueData.key}`);
+    } catch (error) {
+        logger.error(`[${txnId}] jiraWebhook.service.js [handleTrigger] Failed to publish task: ${error.message}`);
+        throw error;
+    }
 
     return {
         processed: true,
         issueKey: issueData.key,
         action: "queued_for_automation",
-        data: completeIssue,
     };
 }
 
