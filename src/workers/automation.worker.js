@@ -1,5 +1,6 @@
 const { logger } = require("../services/log.service");
 const queueService = require("../services/queue.service");
+const claudeCodeService = require("../services/claudeCode.service");
 
 async function processTask(task, txnId) {
     logger.info(`[${txnId}] automation.worker.js [processTask] Processing automation task - issueKey: ${task.issueKey}`);
@@ -10,19 +11,39 @@ async function processTask(task, txnId) {
     logger.info(`[${txnId}] automation.worker.js [processTask] Issue summary: ${issue.summary}`);
     logger.debug(issue, `[${txnId}] automation.worker.js [processTask] Full issue data`);
 
-    // TODO: Implement automation workflow
-    // 1. Extract repository URL from issue description
-    // 2. Clone repository
-    // 3. Create branch with naming template (e.g., feature/{issueKey}-{summary})
-    // 4. Run Claude Code to implement the task
-    // 5. Commit changes
-    // 6. Push branch
-    // 7. Create PR
-    // 8. Update Jira ticket status
+    // Step 1: Validate repository URLs
+    if (!issue.repositoryUrls || issue.repositoryUrls.length === 0) {
+        const errorMsg = "No repository URLs found in issue. Please add repository URL to 'Repository URLs' field.";
+        logger.error(`[${txnId}] automation.worker.js [processTask] ${errorMsg}`);
+        throw new Error(errorMsg);
+    }
 
-    logger.info(`[${txnId}] automation.worker.js [processTask] Task processed - issueKey: ${issueKey}`);
+    // For now, process only the first repository URL
+    const repoUrl = issue.repositoryUrls[0];
+    logger.info(`[${txnId}] automation.worker.js [processTask] Using repository: ${repoUrl}`);
 
-    return { success: true, issueKey };
+    // Step 2: Run Claude Code to handle everything (clone, branch, implement, commit, push, PR)
+    logger.info(`[${txnId}] automation.worker.js [processTask] Running Claude Code for full automation`);
+
+    const result = await claudeCodeService.runClaudeCode(issue, repoUrl, txnId);
+
+    logger.info(`[${txnId}] automation.worker.js [processTask] Claude Code completed`);
+    logger.debug(result, `[${txnId}] automation.worker.js [processTask] Claude Code result`);
+
+    if (result.prUrl) {
+        logger.info(`[${txnId}] automation.worker.js [processTask] PR created: ${result.prUrl}`);
+    }
+
+    // TODO: Step 3: Update Jira ticket status (future implementation)
+
+    logger.info(`[${txnId}] automation.worker.js [processTask] Task completed successfully - issueKey: ${issueKey}`);
+
+    return {
+        success: true,
+        issueKey,
+        branchName: result.branchName,
+        prUrl: result.prUrl,
+    };
 }
 
 async function startWorker() {

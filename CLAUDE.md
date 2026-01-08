@@ -8,9 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Express.js 5.x web application (CommonJS modules) with Pino logging.
 
+**Status: ✅ Fully Operational** - End-to-end automation pipeline tested and working.
+
 ### Purpose
 
-Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled, this system automatically implements the task using Claude Code.
+Automate Jira tasks using AI. When a Jira ticket is labeled with "claude-code", this system automatically implements the task using Claude Code CLI and creates a Pull Request.
 
 ### Workflow
 
@@ -20,13 +22,12 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
 3. Backend processes the trigger:
    - Validates webhook payload
    - Extracts issue data (key, summary, description, labels)
-   - Fetches complete issue details via Jira API
+   - Fetches complete issue details via Jira API (including Repository URLs custom field)
    - Publishes task to RabbitMQ queue
 4. Worker consumes task from queue:
-   - TODO: Fetches repository details
-   - TODO: Creates branch with naming template
-   - TODO: Claude Code implements the task
-   - TODO: Creates PR for the branch
+   - Extracts repository URL from issue's "Repository URLs" custom field
+   - Spawns Claude Code CLI with full automation prompt
+   - Claude Code autonomously: clones repo, creates branch, implements task, commits, pushes, creates PR
 ```
 
 ### Current Integrations
@@ -37,6 +38,7 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
   - Detects changes to assignee, labels, status
 - **Jira API** - ✅ Implemented (`src/services/jira.service.js`)
   - Fetches complete issue details including comments, attachments, links
+  - Extracts "Repository URLs" custom field dynamically by name
   - Handles Atlassian Document Format (ADF) for descriptions
   - Uses `jira.js` library with basic auth
 - **RabbitMQ** - ✅ Implemented (`src/services/rabbitmq.service.js`, `src/services/queue.service.js`)
@@ -44,11 +46,12 @@ Automate Jira tasks using AI. When a Jira ticket is created and assigned/labeled
   - Durable queues with persistent messages
   - Dead letter exchange for failed tasks
   - Worker consumer (`src/workers/automation.worker.js`)
-
-### Planned Integrations
-
-- **GitHub/Git** - Clone repo, create branch, push, create PR
-- **Claude Code** - AI agent to implement the task
+- **Claude Code** - ✅ Implemented (`src/services/claudeCode.service.js`)
+  - Spawns Claude Code CLI as child process with `shell: true` for PATH resolution
+  - Builds comprehensive prompt with full workflow instructions (clone, branch, implement, commit, push, PR)
+  - Sends prompt via stdin to avoid Windows command line length limits
+  - Runs in non-interactive mode with `--print` and `--dangerously-skip-permissions` flags
+  - Extracts PR URL from output for logging
 
 ## Commands
 
@@ -98,6 +101,7 @@ src/
     jira.service.js        # Jira API client
     rabbitmq.service.js    # RabbitMQ connection management
     queue.service.js       # Queue operations (publish/consume)
+    claudeCode.service.js  # Claude Code CLI spawner (handles full automation)
   workers/                 # Background workers
     automation.worker.js   # Task consumer for automation queue
   utils/
@@ -264,6 +268,8 @@ logger.error(`[${txnId}] file.js [functionName] Error: ${error.message}`);
 | RABBITMQ_URL | RabbitMQ connection URL | amqp://guest:guest@localhost:5672 |
 | RABBITMQ_QUEUE_AUTOMATION | Queue name for automation tasks | jira-automation-tasks |
 | RABBITMQ_QUEUE_DLX | Dead letter queue name | jira-automation-dlx |
+| REPOS_BASE_PATH | Base directory for cloned repositories | D:/repos/repositories |
+| CLAUDE_CODE_PATH | Path to Claude Code CLI executable | claude (in PATH) |
 
 ### Env File Style
 
