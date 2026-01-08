@@ -76,6 +76,7 @@ ESLint enforced rules:
 - **camelCase** for folder and file names in routes
 - **camelCase** for variables (not SCREAMING_SNAKE_CASE)
 - **Destructure env vars** at the top below imports: `const { PORT } = process.env;`
+- **Use `moment-timezone`** for all date/time operations (never use JavaScript's native `Date` object)
 
 Run `npm run lint:fix` before committing.
 

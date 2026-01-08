@@ -25,6 +25,7 @@
         "express": "^5.2.1",
         "jira.js": "^5.2.2",
         "joi": "^18.0.2",
+        "moment-timezone": "^0.6.0",
         "nodemon": "^3.1.11",
         "pino": "^10.1.0",
         "pino-pretty": "^13.1.3"

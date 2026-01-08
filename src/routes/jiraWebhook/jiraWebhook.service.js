@@ -1,3 +1,4 @@
+const moment = require("moment-timezone");
 const { logger } = require("../../services/log.service");
 const jiraService = require("../../services/jira.service");
 const queueService = require("../../services/queue.service");
@@ -63,7 +64,7 @@ async function handleTrigger(issueData, txnId) {
     const task = {
         issueKey: issueData.key,
         issue: completeIssue,
-        timestamp: Date.now(),
+        timestamp: moment().toISOString(),
     };
 
     try {

@@ -1,3 +1,4 @@
+const moment = require("moment-timezone");
 const { logger } = require("./log.service");
 const rabbitmqService = require("./rabbitmq.service");
 
@@ -47,7 +48,7 @@ async function publishTask(task, txnId) {
     const message = {
         ...task,
         txnId,
-        publishedAt: Date.now(),
+        publishedAt: moment().toISOString(),
     };
 
     const messageBuffer = Buffer.from(JSON.stringify(message));
